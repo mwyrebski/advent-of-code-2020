@@ -1,3 +1,5 @@
+use points::Point;
+
 #[derive(Copy, Clone, PartialEq, Debug)]
 enum Direction {
     North,
@@ -17,9 +19,6 @@ enum Action {
 }
 
 struct Move(Action, i32);
-
-#[derive(Debug)]
-struct Point(i32, i32);
 
 impl From<i32> for Direction {
     fn from(item: i32) -> Self {
@@ -55,21 +54,98 @@ impl Direction {
     }
 }
 
-impl Point {
-    pub fn manhattan_dist(&self, from: Point) -> i32 {
-        (from.0 - self.0).abs() + (from.1 - self.1).abs()
+mod points {
+    use std::ops::{AddAssign, Mul};
+
+    #[derive(Copy, Clone, PartialEq, Debug)]
+    pub struct Point {
+        x: i32,
+        y: i32,
     }
-    pub fn move_north(&mut self, value: i32) {
-        self.1 -= value;
+
+    impl Point {
+        pub fn new(x: i32, y: i32) -> Point {
+            Point { x, y }
+        }
+        pub fn zero() -> Point {
+            Point::new(0, 0)
+        }
+        pub fn manhattan_dist(&self, from: Point) -> i32 {
+            (from.x - self.x).abs() + (from.y - self.y).abs()
+        }
+        pub fn move_north(&mut self, value: i32) {
+            self.y += value;
+        }
+        pub fn move_south(&mut self, value: i32) {
+            self.y -= value;
+        }
+        pub fn move_east(&mut self, value: i32) {
+            self.x += value;
+        }
+        pub fn move_west(&mut self, value: i32) {
+            self.x -= value;
+        }
+        pub fn rotate_right(&mut self, angle: i32) {
+            let a = angle / 90 % 4;
+            for _ in 0..a {
+                let x2 = self.y;
+                let y2 = -self.x;
+                self.x = x2;
+                self.y = y2;
+            }
+        }
+        pub fn rotate_left(&mut self, angle: i32) {
+            self.rotate_right(360 - angle % 360);
+        }
     }
-    pub fn move_south(&mut self, value: i32) {
-        self.1 += value;
+
+    impl Mul<i32> for Point {
+        type Output = Self;
+
+        fn mul(self, rhs: i32) -> Self {
+            Self::new(self.x * rhs, self.y * rhs)
+        }
     }
-    pub fn move_east(&mut self, value: i32) {
-        self.0 += value;
+
+    impl AddAssign for Point {
+        fn add_assign(&mut self, other: Self) {
+            *self = Self::new(self.x + other.x, self.y + other.y)
+        }
     }
-    pub fn move_west(&mut self, value: i32) {
-        self.0 -= value;
+
+    #[cfg(test)]
+    mod tests {
+        use super::*;
+
+        #[test]
+        fn test_day12_point_rotate_right() {
+            let mut p = Point::new(10, 4);
+            p.rotate_right(90);
+            assert_eq!(Point::new(4, -10), p);
+            p.rotate_right(90);
+            assert_eq!(Point::new(-10, -4), p);
+            p.rotate_right(360);
+            assert_eq!(Point::new(-10, -4), p);
+            p.rotate_right(270);
+            assert_eq!(Point::new(4, -10), p);
+            p.rotate_right(180);
+            assert_eq!(Point::new(-4, 10), p);
+        }
+
+        #[test]
+        fn test_day12_point_rotate_left() {
+            let mut p = Point::new(2, 4);
+            p.rotate_left(90);
+            assert_eq!(Point::new(-4, 2), p);
+            p.rotate_left(90);
+            assert_eq!(Point::new(-2, -4), p);
+            p.rotate_left(360);
+            assert_eq!(Point::new(-2, -4), p);
+            p.rotate_left(270);
+            assert_eq!(Point::new(-4, 2), p);
+            p.rotate_left(180);
+            assert_eq!(Point::new(4, -2), p);
+        }
     }
 }
 
@@ -94,10 +170,9 @@ fn parse_input<'a>(lines: impl Iterator<Item = &'a str>) -> Vec<Move> {
 
 fn part1(moves: &Vec<Move>) -> i32 {
     let mut dir = Direction::East;
-    let mut pt = Point(0, 0);
+    let mut pt = Point::zero();
 
-    for m in moves {
-        let Move(action, value) = m;
+    for Move(action, value) in moves {
         let v = *value;
         match action {
             Action::N => pt.move_north(v),
@@ -115,11 +190,27 @@ fn part1(moves: &Vec<Move>) -> i32 {
         }
     }
 
-    pt.manhattan_dist(Point(0, 0))
+    pt.manhattan_dist(Point::zero())
 }
 
-fn part2(_moves: &Vec<Move>) -> usize {
-    0
+fn part2(moves: &Vec<Move>) -> i32 {
+    let mut ship = Point::zero();
+    let mut waypoint = Point::new(10, 1);
+
+    for Move(action, value) in moves {
+        let v = *value;
+        match action {
+            Action::N => waypoint.move_north(v),
+            Action::S => waypoint.move_south(v),
+            Action::E => waypoint.move_east(v),
+            Action::W => waypoint.move_west(v),
+            Action::L => waypoint.rotate_left(v),
+            Action::R => waypoint.rotate_right(v),
+            Action::F => ship += waypoint * v,
+        }
+    }
+
+    ship.manhattan_dist(Point::zero())
 }
 
 pub fn run() {
@@ -165,9 +256,9 @@ F11
 
     #[test]
     fn test_day12_direction_manhattan_dist_from() {
-        assert_eq!(17 + 8, Point(-17, -8).manhattan_dist(Point(0, 0)));
-        assert_eq!(17 + 8, Point(-17, 8).manhattan_dist(Point(0, 0)));
-        assert_eq!(17 + 8, Point(17, 8).manhattan_dist(Point(0, 0)));
+        assert_eq!(17 + 8, Point::new(-17, -8).manhattan_dist(Point::zero()));
+        assert_eq!(17 + 8, Point::new(-17, 8).manhattan_dist(Point::zero()));
+        assert_eq!(17 + 8, Point::new(17, 8).manhattan_dist(Point::zero()));
     }
 
     #[test]
