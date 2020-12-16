@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 fn part1(nums: &Vec<u32>) -> usize {
     let mut stack = nums.clone();
     // let mut last = {
@@ -30,7 +28,7 @@ fn part1(nums: &Vec<u32>) -> usize {
 
     let mut last = *stack.last().unwrap();
     let mut last_turn_no = stack.len();
-    for i in nums.len()..2020 {
+    for _i in nums.len()..2020 {
         //let prev_turn_no: Option<usize> = rfind(&stack, stack.len() - 1, last);
         let prev_turn_no = {
             let mut j = stack.len() - 2;
@@ -80,63 +78,35 @@ fn part1(nums: &Vec<u32>) -> usize {
 }
 
 fn part2(nums: &Vec<u32>) -> usize {
-    let mut stack = nums.iter().map(|x| *x as usize).collect::<Vec<usize>>();
-    //let mut last = *stack.last().unwrap();
-    let max = 2020 - stack.len();
-    let max = 30000000 - stack.len();
-    let (last_elem, elements) = stack[..].split_last().unwrap();
+    static LEN : usize = 30000000;
+    let mut mem = vec![0; LEN];
 
-    let mut hm = HashMap::new(); // last_value, last_index
+    let max = LEN - nums.len();
+    let (last_elem, elements) = nums[..].split_last().unwrap();
+
     for (i, v) in elements.iter().enumerate() {
-        hm.insert(*v, i + 1);
+        mem[*v as usize] = (i + 1) as usize;
     }
 
-    let mut last = *last_elem;
-    let mut last_turn_no = stack.len();
+    let mut last = *last_elem as usize;
+    let mut last_turn_no = nums.len();
 
-    // let e = hm.entry(addr).or_default();
-    // *e = (value & !mask.zeros) | mask.ones;
-
-    for i in 0..max {
+    for _i in 0..max {
         let v = {
-            match hm.get(&last) {
-                None => 0,
-                Some(prev_turn_no) => last_turn_no - prev_turn_no,
+            let prev_turn_no = mem[last];
+            if prev_turn_no == 0 {
+                0
+            } else {
+                last_turn_no - prev_turn_no
             }
         };
 
-        let e = hm.entry(last).or_default();
-        *e = last_turn_no;
+        mem[last] = last_turn_no;
+
         last_turn_no += 1;
         last = v;
     }
     last
-
-    // for i in 0..max {
-    //     let prev_turn_no = {
-    //         let mut j = stack.len() - 2;
-    //         loop {
-    //             if stack[j] == last {
-    //                 break j + 1;
-    //             }
-    //             if j == 0 {
-    //                 break 0;
-    //             }
-    //             j -= 1;
-    //         }
-    //     };
-
-    //     last = {
-    //         if prev_turn_no > 0 {
-    //             last_turn_no - prev_turn_no
-    //         } else {
-    //             0
-    //         }
-    //     };
-    //     stack.push(last);
-    //     last_turn_no += 1;
-    // }
-    // last
 }
 
 pub fn run() {
