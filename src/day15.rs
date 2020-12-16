@@ -1,84 +1,31 @@
 fn part1(nums: &Vec<u32>) -> usize {
     let mut stack = nums.clone();
-    // let mut last = {
-    //     let x = stack.last().unwrap();
-    //     *x
-    // };
 
-    // let rfind = |vec: &Vec<u32>, start, val| -> Option<usize> {
-    //     let mut j = start - 1;
-    //     loop {
-    //         if vec[j] == val {
-    //             return Some(j + 1);
-    //         }
-    //         if j == 0 {
-    //             break;
-    //         }
-    //         j -= 1;
-    //     }
-    //     // for i in (0..start).rev() {
-    //     //     if vec[i] == val {
-    //     //         return Some(i);
-    //     //     }
-    //     // }
-    //     None
-    // };
-
-    eprintln!(">>> START   stack={:?}", stack);
+    let rfind = |vec: &Vec<u32>, start, val| -> Option<usize> {
+        for i in (0..start).rev() {
+            if vec[i] == val {
+                return Some(i + 1);
+            }
+        }
+        None
+    };
 
     let mut last = *stack.last().unwrap();
-    let mut last_turn_no = stack.len();
+    let mut last_turn_no = stack.len() as u32;
     for _i in nums.len()..2020 {
-        //let prev_turn_no: Option<usize> = rfind(&stack, stack.len() - 1, last);
-        let prev_turn_no = {
-            let mut j = stack.len() - 2;
-            loop {
-                if stack[j] == last {
-                    break j + 1;
-                }
-                if j == 0 {
-                    break 0;
-                }
-                j -= 1;
-            }
+        let prev_turn_no: Option<usize> = rfind(&stack, stack.len() - 1, last);
+        last = match prev_turn_no {
+            None => 0,
+            Some(p) => last_turn_no - p as u32,
         };
-        // let v = match prev_turn_no {
-        //     None => 0,
-        //     Some(p) => last_turn_no - p,
-        // };
-
-        let v = {
-            if prev_turn_no > 0 {
-                last_turn_no - prev_turn_no
-            } else {
-                0
-            }
-        };
-
-        // eprintln!(
-        //     ">>> i{}) last[{}]={},   a_idx = {:?} \t→  v = {}",
-        //     i, last_idx, last, a_idx, v
-        // );
-
-        // let b_idx = a_idx.and_then(|a| rfind(&stack, a, last));
-        // eprintln!(">>> i{}) last = {},   a_idx = {:?}, b_idx = {:?}", i, last, a_idx,b_idx);
-        // let v = match a_idx {
-        //     None => 0,
-        //     Some(a) => match b_idx {
-        //         None => 0,
-        //         Some(b) => (a + 1) as u32 - (b + 1) as u32,
-        //     },
-        // };
-        //eprintln!(" >> push = {}", v);
-        last = v as u32;
-        stack.push(v as u32);
+        stack.push(last as u32);
         last_turn_no += 1;
     }
     last as usize
 }
 
 fn part2(nums: &Vec<u32>) -> usize {
-    static LEN : usize = 30000000;
+    static LEN: usize = 30000000;
     let mut mem = vec![0; LEN];
 
     let max = LEN - nums.len();
