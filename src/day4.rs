@@ -1,4 +1,4 @@
-use crate::lib::split_once;
+use crate::lib::split_once_char;
 use std::collections::HashMap;
 
 struct Passport {
@@ -15,7 +15,7 @@ struct Passport {
 fn parse_passport(data: &str) -> Passport {
     let fields: Vec<(String, String)> = data
         .split_whitespace()
-        .map(|field| split_once(field, ':').unwrap())
+        .map(|field| split_once_char(field, ':'))
         .map(|(k, v)| (String::from(k), String::from(v)))
         .collect();
 

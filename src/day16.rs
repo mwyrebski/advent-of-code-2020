@@ -21,10 +21,10 @@ fn parse_input<'a>(input: &str) -> Notes {
     let fields = p_fields
         .lines()
         .map(|line| {
-            let (name, rules) = split_once_str(line, ": ").unwrap();
-            let (r1, r2) = split_once_str(rules, " or ").unwrap();
-            let (r1a, r1b) = split_once(r1, '-').unwrap();
-            let (r2a, r2b) = split_once(r2, '-').unwrap();
+            let (name, rules) = split_once_str(line, ": ");
+            let (r1, r2) = split_once_str(rules, " or ");
+            let (r1a, r1b) = split_once_char(r1, '-');
+            let (r2a, r2b) = split_once_char(r2, '-');
 
             Field {
                 name: name.to_string(),

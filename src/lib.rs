@@ -15,17 +15,16 @@ pub fn parse_to_vec<'a, T: std::str::FromStr>(it: impl Iterator<Item = &'a str>)
 }
 
 // poor man's implementation of the str::split_once since it's experimental
-pub fn split_once(input: &str, delimiter: char) -> Option<(&str, &str)> {
+pub fn split_once_char(input: &str, delimiter: char) -> (&str, &str) {
     vec2tuple(&input.splitn(2, delimiter).collect())
 }
-pub fn split_once_str<'a>(input: &'a str, delimiter: &str) -> Option<(&'a str, &'a str)> {
+pub fn split_once_str<'a>(input: &'a str, delimiter: &str) -> (&'a str, &'a str) {
     vec2tuple(&input.splitn(2, delimiter).collect())
 }
 
-fn vec2tuple<'a>(v: &Vec<&'a str>) -> Option<(&'a str, &'a str)> {
-    if v.len() == 2 {
-        Some((v[0], v[1]))
-    } else {
-        None
+fn vec2tuple<'a>(v: &Vec<&'a str>) -> (&'a str, &'a str) {
+    if v.len() != 2 {
+        panic!("Expected 2 values in a vector");
     }
+    (v[0], v[1])
 }

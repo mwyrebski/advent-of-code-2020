@@ -1,5 +1,5 @@
 mod code_runner {
-    use crate::lib::split_once;
+    use crate::lib::split_once_char;
 
     #[derive(Copy, Clone)]
     enum Op {
@@ -83,7 +83,7 @@ mod code_runner {
     pub fn parse_input<'a>(lines: impl Iterator<Item = &'a str>) -> BootCode {
         let v = lines
             .map(|line| {
-                let (o, p) = split_once(line, ' ').unwrap();
+                let (o, p) = split_once_char(line, ' ');
                 let i = p.parse::<i32>().unwrap();
 
                 match o {
