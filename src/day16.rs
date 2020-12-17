@@ -1,7 +1,7 @@
 use crate::lib::*;
 use std::collections::HashMap;
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq)]
 struct Field {
     name: String,
     rule1: (u32, u32),
