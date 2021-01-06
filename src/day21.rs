@@ -3,13 +3,13 @@ use std::collections::*;
 type Foods = Vec<Food>;
 
 #[derive(PartialEq, Eq, Hash, Debug)]
-struct Ingridient(String);
+struct Ingredient(String);
 
 #[derive(PartialEq, Eq, Hash, PartialOrd, Ord, Debug)]
 struct Allergen(String);
 
 #[derive(PartialEq, Eq, Hash, Debug)]
-struct Food(Vec<Ingridient>, Vec<Allergen>);
+struct Food(Vec<Ingredient>, Vec<Allergen>);
 
 fn parse(input: &str) -> Foods {
     let contains_len = "contains ".len();
@@ -17,190 +17,105 @@ fn parse(input: &str) -> Foods {
         .lines()
         .map(|line| {
             let sep = line.find('(').unwrap();
-            let ingridients_str = &line[..sep - 1];
+            let ingredients_str = &line[..sep - 1];
             let allergens_str = {
                 let tmp = &line[sep..];
                 &tmp[1 + contains_len..tmp.len() - 1]
             };
-            let ingridients = ingridients_str
+            let ingredients = ingredients_str
                 .split(' ')
-                .map(|x| Ingridient(x.to_string()))
+                .map(|x| Ingredient(x.to_string()))
                 .collect();
             let allergens = allergens_str
                 .split(", ")
                 .map(|x| Allergen(x.to_string()))
                 .collect();
-            Food(ingridients, allergens)
+            Food(ingredients, allergens)
         })
         .collect()
 }
 
-fn part1(foods: &Foods) -> usize {
-    let mut potentially_allergic_map = HashMap::<&Allergen, HashMap<&Ingridient, u32>>::new();
-    let mut all_ingridients = Vec::new();
-    let mut guessed = Vec::new();
-    for Food(ingridients, allergens) in foods {
-        for ingridient in ingridients {
-            all_ingridients.push(ingridient);
-            ////eprintln!("  check {:?}", ingridient);
-
-            // if guessed.contains(&ingridient) {
-            //     continue;
-            // }
-
+fn find_matches(foods: &Foods) -> HashMap<&Ingredient, &Allergen> {
+    let mut potentially_allergic_ingredients_map =
+        HashMap::<&Allergen, HashMap<&Ingredient, u32>>::new();
+    for Food(ingredients, allergens) in foods {
+        for ingredient in ingredients {
             for allergen in allergens {
-                ////eprintln!("{:?}", allergen);
-                let ingridients_freq = potentially_allergic_map.entry(allergen).or_default();
-                let count = ingridients_freq.entry(ingridient).or_default();
+                let ingredients_freq = potentially_allergic_ingredients_map
+                    .entry(allergen)
+                    .or_default();
+                let count = ingredients_freq.entry(ingredient).or_default();
                 *count += 1;
-                // if e.contains(&ingridient) {
-                //     eprintln!("  CONTAINED");
-
-                //     e.retain(|&x| x == ingridient);
-                //     guessed.push(ingridient);
-                // } else {
-                //     eprintln!("  push");
-                //     e.push(ingridient);
-                // }
             }
         }
     }
 
-    //eprintln!("map {:#?}", potentially_allergic_map);
+    let mut match_map = HashMap::<&Ingredient, &Allergen>::new();
 
-    //return 0;
-
-    loop {
-        let matching = potentially_allergic_map.iter().find_map(|(k, v)| {
-            let freq_map = v
+    while !potentially_allergic_ingredients_map.is_empty() {
+        let matching_tuple_opt =
+            potentially_allergic_ingredients_map
                 .iter()
-                .filter(|(ing, _)| !guessed.contains(*ing))
-                .map(|(k, v)| (*k, *v))
-                .collect::<HashMap<&Ingridient, u32>>();
-            let max_freq = freq_map.values().max().unwrap();
+                .find_map(|(allergen, freq_map)| {
+                    let freq_map_except_already_guessed = freq_map
+                        .iter()
+                        .filter(|(ing, _)| !match_map.contains_key(*ing))
+                        .map(|(k, v)| (*k, *v))
+                        .collect::<HashMap<&Ingredient, u32>>();
 
-            let ingridients_with_max_freq = freq_map
-                .iter()
-                .filter_map(|(ingridient, count)| {
-                    if count == max_freq {
-                        Some(*ingridient)
-                    } else {
-                        None
+                    let max_freq = freq_map_except_already_guessed.values().max().unwrap();
+
+                    let most_freq_ingredients = freq_map_except_already_guessed
+                        .iter()
+                        .filter_map(|(ingredient, count)| {
+                            if count == max_freq {
+                                Some(*ingredient)
+                            } else {
+                                None
+                            }
+                        })
+                        .collect::<Vec<&Ingredient>>();
+
+                    match most_freq_ingredients.as_slice() {
+                        [ingredient] => Some((*ingredient, *allergen)),
+                        _ => None,
                     }
-                })
-                .collect::<Vec<&Ingridient>>();
+                });
 
-            if ingridients_with_max_freq.len() == 1 {
-                let allergen = *k;
-                Some((allergen, ingridients_with_max_freq[0]))
-            } else {
-                None
-            }
-        });
-
-        if let Some((allergen, ingridient)) = matching {
-            potentially_allergic_map.remove(allergen);
-            guessed.push(ingridient);
-        }
-
-        //for (&allergen, freq_map) in potentially_allergic_map.iter() {}
-
-        if potentially_allergic_map.is_empty() {
-            break;
+        if let Some((ingredient, allergen)) = matching_tuple_opt {
+            potentially_allergic_ingredients_map.remove(allergen);
+            match_map.insert(ingredient, allergen);
         }
     }
 
-    // let mut possibly_with_allergens = HashSet::new();
-    // for &ingridient in potentially_allergic_map.values().flatten() {
-    //     possibly_with_allergens.insert(ingridient);
-    // }
+    match_map
+}
 
-    //eprintln!("all  {:#?}", all_ingridients);
-    // eprintln!("possibly {:#?}", possibly_with_allergens);
-    // eprintln!("guessed {:#?}", guessed);
+fn part1(foods: &Foods) -> usize {
+    let matches = find_matches(foods);
 
-    all_ingridients
+    let all_ingredients: Vec<&Ingredient> = foods
         .iter()
-        .filter(|i| !guessed.contains(i))
-        .count()
+        .map(|Food(ingredients, _)| ingredients)
+        .flatten()
+        .collect();
 
-    //all_ingridients.difference(&guessed).count()
-    //0
+    all_ingredients
+        .into_iter()
+        .filter(|i| !matches.contains_key(i))
+        .count()
 }
 
 fn part2(foods: &Foods) -> String {
-    let mut potentially_allergic_map = HashMap::<&Allergen, HashMap<&Ingridient, u32>>::new();
-    let mut all_ingridients = Vec::new();
-    for Food(ingridients, allergens) in foods {
-        for ingridient in ingridients {
-            all_ingridients.push(ingridient);
-            for allergen in allergens {
-                let ingridients_freq = potentially_allergic_map.entry(allergen).or_default();
-                let count = ingridients_freq.entry(ingridient).or_default();
-                *count += 1;
-            }
-        }
-    }
+    let matches = find_matches(foods);
 
-    let mut guessed_map = HashMap::<&Ingridient, &Allergen>::new();
-    loop {
-        let matching = potentially_allergic_map.iter().find_map(|(k, v)| {
-            let freq_map = v
-                .iter()
-                .filter(|(ing, _)| !guessed_map.contains_key(*ing))
-                .map(|(k, v)| (*k, *v))
-                .collect::<HashMap<&Ingridient, u32>>();
-            let max_freq = freq_map.values().max().unwrap();
-
-            let ingridients_with_max_freq = freq_map
-                .iter()
-                .filter_map(|(ingridient, count)| {
-                    if count == max_freq {
-                        Some(*ingridient)
-                    } else {
-                        None
-                    }
-                })
-                .collect::<Vec<&Ingridient>>();
-
-            if ingridients_with_max_freq.len() == 1 {
-                let allergen = *k;
-                Some((ingridients_with_max_freq[0], allergen))
-            } else {
-                None
-            }
-        });
-
-        if let Some((ingridient, allergen)) = matching {
-            potentially_allergic_map.remove(allergen);
-            guessed_map.insert(ingridient, allergen);
-        }
-
-        if potentially_allergic_map.is_empty() {
-            break;
-        }
-    }
-
-    let mut guessed: Vec<_> = guessed_map.into_iter().collect();
-    guessed.sort_by_key(|(_, allergen)| *allergen);
-    let values = guessed
+    let mut ingredient_allergen_vec: Vec<_> = matches.into_iter().collect();
+    ingredient_allergen_vec.sort_by_key(|(_, allergen)| *allergen);
+    ingredient_allergen_vec
         .iter()
-        .map(|(ingridient, _)| {
-            let Ingridient(s) = ingridient;
-            s.clone()
-        })
+        .map(|(Ingredient(ingredient_string), _)| ingredient_string.clone())
         .collect::<Vec<_>>()
-        .join(",");
-
-    values
-    // let mut possibly_with_allergens = HashSet::new();
-    // for &ingridient in potentially_allergic_map.values().flatten() {
-    //     possibly_with_allergens.insert(ingridient);
-    // }
-
-    //eprintln!("all  {:#?}", all_ingridients);
-    // eprintln!("possibly {:#?}", possibly_with_allergens);
-    // eprintln!("guessed {:#?}", guessed);
+        .join(",")
 }
 
 pub fn run() {
@@ -226,9 +141,9 @@ sqjhc mxmxvkd sbzzf (contains fish)
         assert_eq!(
             vec![Food(
                 vec![
-                    Ingridient("abc".to_string()),
-                    Ingridient("def".to_string()),
-                    Ingridient("ghi".to_string())
+                    Ingredient("abc".to_string()),
+                    Ingredient("def".to_string()),
+                    Ingredient("ghi".to_string())
                 ],
                 vec![Allergen("asdf".to_string()), Allergen("qwer".to_string())]
             )],
