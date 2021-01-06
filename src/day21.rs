@@ -5,7 +5,7 @@ type Foods = Vec<Food>;
 #[derive(PartialEq, Eq, Hash, Debug)]
 struct Ingridient(String);
 
-#[derive(PartialEq, Eq, Hash, Debug)]
+#[derive(PartialEq, Eq, Hash, PartialOrd, Ord, Debug)]
 struct Allergen(String);
 
 #[derive(PartialEq, Eq, Hash, Debug)]
@@ -119,14 +119,88 @@ fn part1(foods: &Foods) -> usize {
     // eprintln!("possibly {:#?}", possibly_with_allergens);
     // eprintln!("guessed {:#?}", guessed);
 
-    all_ingridients.iter().filter(|i| !guessed.contains(i)).count()
+    all_ingridients
+        .iter()
+        .filter(|i| !guessed.contains(i))
+        .count()
 
     //all_ingridients.difference(&guessed).count()
     //0
 }
 
-fn part2(data: &Foods) -> usize {
-    0
+fn part2(foods: &Foods) -> String {
+    let mut potentially_allergic_map = HashMap::<&Allergen, HashMap<&Ingridient, u32>>::new();
+    let mut all_ingridients = Vec::new();
+    for Food(ingridients, allergens) in foods {
+        for ingridient in ingridients {
+            all_ingridients.push(ingridient);
+            for allergen in allergens {
+                let ingridients_freq = potentially_allergic_map.entry(allergen).or_default();
+                let count = ingridients_freq.entry(ingridient).or_default();
+                *count += 1;
+            }
+        }
+    }
+
+    let mut guessed_map = HashMap::<&Ingridient, &Allergen>::new();
+    loop {
+        let matching = potentially_allergic_map.iter().find_map(|(k, v)| {
+            let freq_map = v
+                .iter()
+                .filter(|(ing, _)| !guessed_map.contains_key(*ing))
+                .map(|(k, v)| (*k, *v))
+                .collect::<HashMap<&Ingridient, u32>>();
+            let max_freq = freq_map.values().max().unwrap();
+
+            let ingridients_with_max_freq = freq_map
+                .iter()
+                .filter_map(|(ingridient, count)| {
+                    if count == max_freq {
+                        Some(*ingridient)
+                    } else {
+                        None
+                    }
+                })
+                .collect::<Vec<&Ingridient>>();
+
+            if ingridients_with_max_freq.len() == 1 {
+                let allergen = *k;
+                Some((ingridients_with_max_freq[0], allergen))
+            } else {
+                None
+            }
+        });
+
+        if let Some((ingridient, allergen)) = matching {
+            potentially_allergic_map.remove(allergen);
+            guessed_map.insert(ingridient, allergen);
+        }
+
+        if potentially_allergic_map.is_empty() {
+            break;
+        }
+    }
+
+    let mut guessed: Vec<_> = guessed_map.into_iter().collect();
+    guessed.sort_by_key(|(_, allergen)| *allergen);
+    let values = guessed
+        .iter()
+        .map(|(ingridient, _)| {
+            let Ingridient(s) = ingridient;
+            s.clone()
+        })
+        .collect::<Vec<_>>()
+        .join(",");
+
+    values
+    // let mut possibly_with_allergens = HashSet::new();
+    // for &ingridient in potentially_allergic_map.values().flatten() {
+    //     possibly_with_allergens.insert(ingridient);
+    // }
+
+    //eprintln!("all  {:#?}", all_ingridients);
+    // eprintln!("possibly {:#?}", possibly_with_allergens);
+    // eprintln!("guessed {:#?}", guessed);
 }
 
 pub fn run() {
@@ -169,6 +243,6 @@ sqjhc mxmxvkd sbzzf (contains fish)
 
     #[test]
     fn test_day21_part2_sample1() {
-        assert_eq!(0, part2(&parse(SAMPLE1)));
+        assert_eq!("mxmxvkd,sqjhc,fvjkl", part2(&parse(SAMPLE1)));
     }
 }
