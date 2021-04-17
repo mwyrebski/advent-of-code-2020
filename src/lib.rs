@@ -28,3 +28,37 @@ fn vec2tuple<'a>(v: &Vec<&'a str>) -> (&'a str, &'a str) {
     }
     (v[0], v[1])
 }
+
+pub mod point {
+    use std::ops::*;
+
+    #[derive(Copy, Clone, Hash, Eq, PartialEq, Debug)]
+    pub struct Point<T> {
+        x: T,
+        y: T,
+    }
+    impl<T: Default> Point<T> {
+        pub fn new(x: T, y: T) -> Point<T> {
+            Point { x, y }
+        }
+        pub fn zero() -> Point<T> {
+            Point::new(Default::default(), Default::default())
+        }
+    }
+    impl<T: From<T> + Default> From<(T, T)> for Point<T> {
+        fn from((x, y): (T, T)) -> Self {
+            Point::new(x, y)
+        }
+    }
+    impl<T: AddAssign<T> + Add<Output = T> + Default + Copy> AddAssign for Point<T> {
+        fn add_assign(&mut self, other: Self) {
+            *self = Self::new(self.x + other.x, self.y + other.y)
+        }
+    }
+    impl<T: Add<Output = T> + Default> Add for Point<T> {
+        type Output = Self;
+        fn add(self, other: Self) -> Self::Output {
+            Self::new(self.x + other.x, self.y + other.y)
+        }
+    }
+}
