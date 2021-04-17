@@ -53,10 +53,69 @@ fn part1(parsed: &Vec<u32>) -> u32 {
     calc_moves(100, parsed)
 }
 
+fn part2(parsed: &Vec<u32>) -> usize {
+    let extend = 1_000_000_usize;
+    let count = 10_000_000_usize;
+
+    let cups_list = {
+        let parsed_max = *parsed.iter().max().unwrap() as usize;
+        let mut cups_list: Vec<usize> = parsed.iter().map(|&x| x as usize).collect();
+        for i in parsed_max + 1..=extend {
+            cups_list.push(i);
+        }
+        cups_list
+    };
+
+    let min = *cups_list.iter().min().unwrap();
+    let max = *cups_list.iter().max().unwrap();
+
+    let mut rights = vec![0; cups_list.len() + 1];
+    for win in cups_list.windows(2) {
+        if let [this, next] = win {
+            rights[*this] = *next;
+        }
+    }
+    let first = *cups_list.first().unwrap();
+    let last = *cups_list.last().unwrap();
+    rights[last] = first;
+
+    let mut current = first;
+    for _ in 1..=count {
+        let a = rights[current];
+        let b = rights[a];
+        let c = rights[b];
+        let dest = {
+            let mut dst = current;
+            loop {
+                dst -= 1;
+                if dst < min {
+                    dst = max;
+                }
+                if dst != a && dst != b && dst != c {
+                    break dst;
+                }
+            }
+        };
+        let new_current_next = rights[c];
+        let dest_next = rights[dest];
+        rights[current] = new_current_next;
+        rights[dest] = a;
+        rights[c] = dest_next;
+
+        current = rights[current];
+    }
+
+    let x = rights[1];
+    let y = rights[x];
+
+    x * y
+}
+
 pub fn run() {
     let input = include_str!("input/day23.txt");
     let parsed = &parse(input);
     println!("Day 23/1: {}", part1(parsed));
+    println!("Day 23/2: {}", part2(parsed));
 }
 
 #[cfg(test)]
@@ -71,8 +130,12 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     fn test_day23_part1_sample1() {
         assert_eq!(67384529, part1(&parse(SAMPLE1)));
+    }
+
+    #[test]
+    fn test_day23_part2_sample1() {
+        assert_eq!(149245887792, part2(&parse(SAMPLE1)));
     }
 }
