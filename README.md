@@ -26,9 +26,9 @@ I solved all these puzzles on Windows box with Rust 1.48.0:
 
 ## Running
 
-Execute this program with cargo:
+Execute this program with cargo. Use optimized _release_ profile for better performance:
 
-    $ cargo run
+    $ cargo run --release
 
 Most of the solutions contains some tests. They can be executed with:
 
