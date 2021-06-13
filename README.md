@@ -36,4 +36,4 @@ Most of the solutions contains some tests. They can be executed with:
 
 # License
 
-[MIT](https://opensource.org/licenses/MIT)
+Code in this repository is licensed under MIT. See LICENSE for details.
