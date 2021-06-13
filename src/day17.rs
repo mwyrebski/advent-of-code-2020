@@ -166,7 +166,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     fn test_day17_part2_sample1() {
         assert_eq!(848, part2(&parse_input(SAMPLE1)));
     }

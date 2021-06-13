@@ -82,7 +82,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     fn test_day15_part2_samples() {
         assert_eq!(175594, part2(&vec![0, 3, 6]));
         assert_eq!(2578, part2(&vec![1, 3, 2]));

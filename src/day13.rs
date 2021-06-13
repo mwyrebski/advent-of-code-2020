@@ -120,7 +120,6 @@ mod tests {
     }
 
     #[test]
-    //#[ignore]
     fn test_day13_part2_more_samples() {
         assert_eq!(3417, part2(&parse_input("0\n17,x,13,19")));
         assert_eq!(754018, part2(&parse_input("0\n67,7,59,61")));
